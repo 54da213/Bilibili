@@ -12,6 +12,67 @@ def get_color():
     return random.sample(RGB, 1)[0]
 
 
+class Marquee(object):
+    def __init__(self):
+        # 长度
+        self.length = 15
+        self.flash_index = 0
+        self.h_flash_index = 0
+        self.w_up_start_pos, self.w_down_start_pos = (5, 5), (5, 395)
+        self.h_left_start_pos, self.h_right_start_pos = (5, 5), (795, 5)
+        self.w_up_pos_group, self.w_down_pos_group, self.h_left_pos_group, self.h_right_pos_group = [
+                                                                                                        self.w_up_start_pos], [
+                                                                                                        self.w_down_start_pos], \
+                                                                                                    [
+                                                                                                        self.h_left_start_pos], [
+                                                                                                        self.h_right_start_pos]
+
+    def get_pos_group(self, *args, **kwargs):
+        # 生成上边,下边框灯条坐标
+        w_count = screen.get_width() / self.length
+        for i in xrange(1, w_count - 1):
+            self.w_up_pos_group.append((self.w_up_pos_group[i - 1][0] + self.length + 5 + 5, 5))
+            self.w_down_pos_group.append((self.w_up_pos_group[i - 1][0] + self.length + 5 + 5, 395))
+        # 生成左边,右边框灯条坐标
+        h_count = screen.get_height() / self.length
+        for i in xrange(1, h_count):
+            self.h_left_pos_group.append((5, self.h_left_pos_group[i - 1][1] + self.length + 5))
+            self.h_right_pos_group.append((795, self.h_right_pos_group[i - 1][1] + self.length + 5))
+
+    def set_flash(self, *args, **kwargs):
+        self.flash_index += 0.1
+        self.h_flash_index += 0.1
+        if int(self.flash_index) == screen.get_width() / self.length:
+            self.flash_index = 0
+        if int(self.h_flash_index) == screen.get_height() / self.length:
+            self.h_flash_index = 0
+
+    @staticmethod
+    def get_color(*args, **kwargs):
+        random.shuffle(RGB)
+        return random.sample(RGB, 1)[0]
+
+    def draw(self, *args, **kwargs):
+        screen, bar_color, = args
+        color = (255, 255, 255)
+        for index, pos in enumerate(self.w_up_pos_group):
+            if index == int(self.flash_index):
+                color = bar_color
+            # 上边框 每个间距5px
+            pygame.draw.line(screen, color, pos, (pos[0] + 5, pos[1]), 5)
+            # 下边框
+            pygame.draw.line(screen, color, (self.w_down_pos_group[index][0], self.w_down_pos_group[index][1]),
+                             (self.w_down_pos_group[index][0] + 5, self.w_down_pos_group[index][1]), 5)
+        color = (255, 255, 255)
+        # 开始绘制左边和右边的灯带
+        for index, pos in enumerate(self.h_left_pos_group):
+            if index == int(self.h_flash_index):
+                color = bar_color
+            pygame.draw.line(screen, color, pos, (pos[0], pos[1] + 5), 5)
+            pygame.draw.line(screen, color, (self.h_right_pos_group[index][0], self.h_right_pos_group[index][1]),
+                             (self.h_right_pos_group[index][0], self.h_right_pos_group[index][1] + 5), 5)
+
+
 class TV(object):
     def __init__(self):
         pass
@@ -65,13 +126,21 @@ if __name__ == '__main__':
     # 绘制文字
     logo = Logo()
     font = logo.draw()
-    print(pygame.font.get_fonts())
+    # 绘制小电视
+    tv = TV()
+    # 跑马灯
+    marquee = Marquee()
+    # 初始化灯条位置
+    marquee.get_pos_group()
     # 主循环
     while True:
+        # 渲染灯条
+        # 为灯条选取一个随机颜色
+        bar_color = Marquee.get_color()
+        marquee.draw(screen, bar_color)
+        marquee.set_flash()
         # 获取随机颜色
         tv_color = get_color()
-        # 绘制小电视
-        tv = TV()
         tv.draw(screen, tv_color)
         logo_color = get_color()
         logo_txt_surface = font.render("bilibili", True, logo_color)
